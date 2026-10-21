@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIC Circuit - Mic_BIAS, Mic_IN1_P & GND Flow</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for Myanmar & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Padauk:wght@400;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Inter', 'Padauk', sans-serif;
+            background-color: #090d16;
+            color: #f8fafc;
+            user-select: none;
+        }
+        canvas {
+            touch-action: none;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+        }
+        .custom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between items-center p-3 sm:p-6 bg-slate-950">
+
+    <!-- Header Title -->
+    <header class="w-full max-w-6xl mb-4 flex flex-col md:flex-row justify-between items-center gap-4 border-b border-slate-800 pb-4">
+        <div>
+            <h1 class="text-xl sm:text-2xl font-bold text-emerald-400 flex items-center gap-2">
+                <i class="fa-solid fa-microphone text-amber-400"></i> MIC Circuit Voltage & Signal Flow Animation
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-400 mt-1">
+                Mic_BIAS, Mic_IN1_P Signal နှင့် GND (Ground) လျှပ်စစ်စီးဆင်းမှု လမ်းကြောင်းများ
+            </p>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Live Animation
+            </span>
+        </div>
+    </header>
+
+    <!-- Main Canvas Box Container -->
+    <main class="w-full max-w-6xl flex flex-col items-center gap-4">
+        
+        <!-- Interactive Controls Bar -->
+        <div class="w-full bg-slate-900/90 border border-slate-800 rounded-xl p-3 sm:p-4 flex flex-wrap justify-between items-center gap-3 backdrop-blur-md">
+            
+            <!-- Playback Controls -->
+            <div class="flex items-center gap-2">
+                <button id="playPauseBtn" class="bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition-all text-white px-4 py-2 rounded-lg font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/30">
+                    <i id="playIcon" class="fa-solid fa-pause"></i> <span id="playBtnText">Pause Flow</span>
+                </button>
+                <button id="resetBtn" class="bg-slate-800 hover:bg-slate-700 active:scale-95 transition-all text-slate-200 px-3 py-2 rounded-lg text-xs sm:text-sm flex items-center gap-1.5">
+                    <i class="fa-solid fa-rotate-right"></i> Reset
+                </button>
+                <button id="reverseBiasBtn" class="bg-slate-800 hover:bg-slate-700 active:scale-95 transition-all text-slate-200 px-3 py-2 rounded-lg text-xs sm:text-sm flex items-center gap-1.5 border border-red-500/40">
+                    <i class="fa-solid fa-arrows-left-right text-red-400"></i>
+                    <span id="biasDirText">Volt Flow: Audio CODE ➔ MIC</span>
+                </button>
+            </div>
+
+            <!-- Animation Speed Control -->
+            <div class="flex items-center gap-3 bg-slate-950/60 px-3 py-1.5 rounded-lg border border-slate-800">
+                <span class="text-xs text-slate-400 font-medium"><i class="fa-solid fa-gauge-high text-emerald-400"></i> Speed:</span>
+                <input id="speedSlider" type="range" min="0.2" max="3" step="0.1" value="1" class="w-20 sm:w-28 custom-slider accent-emerald-400 bg-slate-800 h-1.5 rounded-lg cursor-pointer">
+                <span id="speedVal" class="text-xs text-emerald-300 font-bold w-8 text-center">1.0x</span>
+            </div>
+
+            <!-- Animation Effect Style -->
+            <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-400 font-medium"><i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> Style:</span>
+                <select id="styleSelect" class="bg-slate-950 text-xs sm:text-sm border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-emerald-500">
+                    <option value="particles">Glowing Dots (လျှပ်စစ်စက်ဝိုင်း)</option>
+                    <option value="arrows">Flowing Arrows (မြှားခေါင်း)</option>
+                    <option value="pulse">Sine Wave Pulse (လျှပ်စစ်လှိုင်း)</option>
+                </select>
+            </div>
+
+        </div>
+
+        <!-- Canvas Display Frame -->
+        <div class="w-full relative aspect-[16/8.5] bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden flex items-center justify-center p-1 sm:p-2">
+            <canvas id="circuitCanvas" class="w-full h-full rounded-xl bg-slate-950 cursor-crosshair"></canvas>
+            
+            <!-- Tooltip Overlay -->
+            <div id="tooltip" class="absolute pointer-events-none opacity-0 transition-opacity bg-slate-900/95 border border-emerald-500/40 text-slate-100 text-xs px-3 py-2 rounded-lg shadow-xl backdrop-blur-md">
+                Component Info
+            </div>
+        </div>
+
+        <!-- Signal Line Toggles (Checkboxes) -->
+        <div class="w-full bg-slate-900/70 border border-slate-800/80 rounded-xl p-3 flex flex-wrap justify-center sm:justify-around gap-3 text-xs">
+            <label class="flex items-center gap-2 cursor-pointer bg-slate-950/80 hover:bg-slate-800/50 px-4 py-2 rounded-lg border border-red-500/30 transition-colors">
+                <input type="checkbox" id="toggleBias" checked class="accent-red-500 w-4 h-4 cursor-pointer">
+                <span class="w-3 h-3 rounded-full bg-red-500 inline-block shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span>
+                <span class="font-semibold text-slate-200">Mic_BIAS (Audio CODE ➔ MIC)</span>
+            </label>
+
+            <label class="flex items-center gap-2 cursor-pointer bg-slate-950/80 hover:bg-slate-800/50 px-4 py-2 rounded-lg border border-slate-400/30 transition-colors">
+                <input type="checkbox" id="toggleGnd" checked class="accent-slate-400 w-4 h-4 cursor-pointer">
+                <span class="w-3 h-3 rounded-full bg-slate-400 inline-block shadow-[0_0_8px_rgba(148,163,184,0.8)]"></span>
+                <span class="font-semibold text-slate-200">GND Flow (GND ➔ MIC)</span>
+            </label>
+
+            <label class="flex items-center gap-2 cursor-pointer bg-slate-950/80 hover:bg-slate-800/50 px-4 py-2 rounded-lg border border-sky-500/30 transition-colors">
+                <input type="checkbox" id="toggleIn1" checked class="accent-sky-500 w-4 h-4 cursor-pointer">
+                <span class="w-3 h-3 rounded-full bg-sky-400 inline-block shadow-[0_0_8px_rgba(56,189,248,0.8)]"></span>
+                <span class="font-semibold text-slate-200">Mic_IN1_P (MIC ➔ Audio CODE)</span>
+            </label>
+        </div>
+
+    </main>
+
+    <!-- Footer Information -->
+    <footer class="mt-6 text-center text-xs text-slate-500">
+        မိုဘိုင်းဖုန်း ပြင်ဆင်နည်း ပညာရပ်ဆိုင်ရာ Schematic Microphone Line Flow Animation
+    </footer>
+
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+        const tooltip = document.getElementById('tooltip');
+
+        // State variables
+        let isPlaying = true;
+        let speed = 1.0;
+        let animStyle = 'particles'; // 'particles', 'arrows', 'pulse'
+        let animOffset = 0;
+
+        // Signal Toggles
+        const toggles = {
+            bias: true,
+            in1: true,
+            gnd: true,
+            biasReverse: false // false: Audio CODE -> MIC, true: MIC -> Audio CODE
+        };
+
+        // Standard BASE viewport size (1000 x 500)
+        const BASE_WIDTH = 1000;
+        const BASE_HEIGHT = 500;
+
+        function getLayout() {
+            return {
+                // Audio CODE (Green Box on Right)
+                audioIc: { 
+                    x: 770, y: 110, w: 170, h: 250, 
+                    title: 'Audio CODE', 
+                    sub: '၂', 
+                    color: '#22c55e', 
+                    info: 'Audio CODE - Mic_BIAS ဗို့အား ထုတ်ပေးပြီး MIC မှလာသော အသံ Signal ကို လက်ခံပါသည်' 
+                },
+
+                // Microphone Unit (Left side)
+                mic: { 
+                    x: 60, y: 150, w: 65, h: 100, 
+                    title: 'Microphone (MIC)', 
+                    sub: '၃', 
+                    info: 'Microphone - Audio Signal ကို လျှပ်စစ် Signal အဖြစ် ပြောင်းလဲပေးသည့် အစိတ်အပိုင်း' 
+                },
+
+                // Sockets
+                subSocket: { 
+                    x: 320, y: 130, w: 18, h: 180, 
+                    title: 'အောက်ခြမ်း Socket', 
+                    info: 'Charging / Sub-board ပေါ်ရှိ MIC မိုက် Socket connection' 
+                },
+                mainSocket: { 
+                    x: 630, y: 130, w: 18, h: 180, 
+                    title: 'Mainboard Socket', 
+                    info: 'Mainboard ပေါ်ရှိ ဆက်သွယ်မှု Socket connection' 
+                },
+
+                // Coils / Inductors (Series Filtering)
+                coilIn1: { x: 190, y: 175, w: 80, h: 20, title: 'Inductor Coil (IN1_P)', info: 'Series Noise Filtering Coil for Mic_IN1_P' },
+                coilBias: { x: 190, y: 245, w: 80, h: 20, title: 'Inductor Coil (BIAS)', info: 'Series Noise Filtering Coil for Mic_BIAS' },
+
+                // Ground Point Position
+                gndPoint: { x: 30, y: 380, title: 'GND (Ground)', info: 'Ground Reference Connection for MIC Circuit' },
+
+                // Flex Cable area label
+                flexCable: { x: 420, y: 150, w: 140, h: 40, title: 'အလယ်ကြိုး (Interconnect Flex Cable)', info: 'Sub-board နှင့် Mainboard ကို ဆက်သွယ်ထားသော Flex Ribbon Cable' }
+            };
+        }
+
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+
+            ctx.scale(dpr, dpr);
+            draw();
+        }
+
+        function drawRoundedRect(ctx, x, y, width, height, radius, fillStyle, strokeStyle, lineWidth = 2) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+
+            if (fillStyle) {
+                ctx.fillStyle = fillStyle;
+                ctx.fill();
+            }
+            if (strokeStyle) {
+                ctx.strokeStyle = strokeStyle;
+                ctx.lineWidth = lineWidth;
+                ctx.stroke();
+            }
+        }
+
+        function drawArrowHead(ctx, x, y, angle, color) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-8, -4.5);
+            ctx.lineTo(-8, 4.5);
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Function to draw schematic Inductor Loops
+        function drawInductorCoil(ctx, x, y, width, color) {
+            const loops = 4;
+            const loopRadius = width / (loops * 1.8);
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2.5;
+
+            let currX = x;
+            for (let i = 0; i < loops; i++) {
+                const centerX = currX + loopRadius;
+                ctx.arc(centerX, y, loopRadius, Math.PI, 0, false);
+                currX += loopRadius * 1.8;
+            }
+            ctx.stroke();
+        }
+
+        // Function to render realistic Microphone module
+        function drawMicrophone(ctx, x, y, w, h) {
+            // Gold metallic body
+            const goldGrad = ctx.createLinearGradient(x, y, x + w, y + h);
+            goldGrad.addColorStop(0, '#eab308');
+            goldGrad.addColorStop(0.5, '#fef08a');
+            goldGrad.addColorStop(1, '#ca8a04');
+
+            drawRoundedRect(ctx, x, y, w, h, 6, goldGrad, '#a16207', 1.5);
+
+            // Black center hole pad
+            ctx.beginPath();
+            ctx.arc(x + w * 0.5, y + h * 0.35, w * 0.2, 0, Math.PI * 2);
+            ctx.fillStyle = '#1e293b';
+            ctx.fill();
+            ctx.strokeStyle = '#facc15';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(x + w * 0.5, y + h * 0.35, w * 0.08, 0, Math.PI * 2);
+            ctx.fillStyle = '#0f172a';
+            ctx.fill();
+
+            // Solder Pads on MIC
+            const padW = 12;
+            const padH = 8;
+            // Pad 1 (Mic_IN1_P - Top)
+            drawRoundedRect(ctx, x + w - padW, y + 20, padW, padH, 2, '#fbbf24', '#b45309', 1);
+            // Pad 2 (Mic_BIAS - Bottom)
+            drawRoundedRect(ctx, x + w - padW, y + h - 28, padW, padH, 2, '#fbbf24', '#b45309', 1);
+        }
+
+        function drawLineSignal(x1, y1, x2, y2, color, active, label, labelYOffset = -10, flowStyle = 'particles', reverseDirection = false) {
+            const scaleX = canvas.clientWidth / BASE_WIDTH;
+            const scaleY = canvas.clientHeight / BASE_HEIGHT;
+
+            const px1 = x1 * scaleX;
+            const py1 = y1 * scaleY;
+            const px2 = x2 * scaleX;
+            const py2 = y2 * scaleY;
+
+            // Draw base wire line
+            ctx.beginPath();
+            ctx.moveTo(px1, py1);
+            ctx.lineTo(px2, py2);
+            ctx.strokeStyle = active ? color : '#334155';
+            ctx.lineWidth = active ? 2.5 * scaleX : 1.5 * scaleX;
+            ctx.stroke();
+
+            // End Arrow indicator
+            const dx = px2 - px1;
+            const dy = py2 - py1;
+            const baseAngle = Math.atan2(dy, dx);
+            const arrowAngle = reverseDirection ? baseAngle + Math.PI : baseAngle;
+            const arrowX = reverseDirection ? px1 : px2;
+            const arrowY = reverseDirection ? py1 : py2;
+
+            drawArrowHead(ctx, arrowX, arrowY, arrowAngle, active ? color : '#475569');
+
+            // Draw Signal Name Label
+            if (label) {
+                const midX = (px1 + px2) / 2;
+                const midY = (py1 + py2) / 2 + labelYOffset * scaleY;
+                ctx.fillStyle = active ? '#f8fafc' : '#64748b';
+                ctx.font = `bold ${Math.max(11, 14 * scaleX)}px Inter`;
+                ctx.textAlign = 'center';
+                ctx.fillText(label, midX, midY);
+            }
+
+            // Draw Animated Flow
+            if (active && isPlaying) {
+                const distance = Math.hypot(dx, dy);
+                const speedMultiplier = reverseDirection ? -1 : 1;
+                
+                if (flowStyle === 'particles') {
+                    const step = 20 * scaleX;
+                    const particleCount = Math.floor(distance / step);
+                    
+                    for (let i = 0; i < particleCount; i++) {
+                        let offsetVal = (i * step + (animOffset * speed * 25 * scaleX * speedMultiplier)) % distance;
+                        if (offsetVal < 0) offsetVal += distance;
+
+                        const progress = offsetVal / distance;
+                        const curX = px1 + dx * progress;
+                        const curY = py1 + dy * progress;
+
+                        ctx.beginPath();
+                        ctx.arc(curX, curY, 3.5 * scaleX, 0, Math.PI * 2);
+                        ctx.fillStyle = '#ffffff';
+                        ctx.shadowColor = color;
+                        ctx.shadowBlur = 10;
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                    }
+                } 
+                else if (flowStyle === 'arrows') {
+                    const step = 35 * scaleX;
+                    const arrowCount = Math.floor(distance / step);
+
+                    for (let i = 0; i < arrowCount; i++) {
+                        let offsetVal = (i * step + (animOffset * speed * 30 * scaleX * speedMultiplier)) % distance;
+                        if (offsetVal < 0) offsetVal += distance;
+
+                        const progress = offsetVal / distance;
+                        const curX = px1 + dx * progress;
+                        const curY = py1 + dy * progress;
+
+                        drawArrowHead(ctx, curX, curY, arrowAngle, '#ffffff');
+                    }
+                } 
+                else if (flowStyle === 'pulse') {
+                    ctx.save();
+                    ctx.beginPath();
+                    const wavelength = 20 * scaleX;
+                    const amplitude = 4.5 * scaleY;
+
+                    for (let d = 0; d < distance; d += 2) {
+                        const progress = d / distance;
+                        const bx = px1 + dx * progress;
+                        const by = py1 + dy * progress;
+                        
+                        const shift = (d - animOffset * speed * 40 * scaleX * speedMultiplier);
+                        const perpX = -Math.sin(baseAngle) * Math.sin(shift / wavelength * Math.PI * 2) * amplitude;
+                        const perpY = Math.cos(baseAngle) * Math.sin(shift / wavelength * Math.PI * 2) * amplitude;
+
+                        if (d === 0) ctx.moveTo(bx + perpX, by + perpY);
+                        else ctx.lineTo(bx + perpX, by + perpY);
+                    }
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.shadowColor = color;
+                    ctx.shadowBlur = 8;
+                    ctx.lineWidth = 2 * scaleX;
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            }
+        }
+
+        function draw() {
+            const width = canvas.clientWidth;
+            const height = canvas.clientHeight;
+            const scaleX = width / BASE_WIDTH;
+            const scaleY = height / BASE_HEIGHT;
+
+            // Background Fill
+            ctx.fillStyle = '#030712';
+            ctx.fillRect(0, 0, width, height);
+
+            // Grid Lines
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 1;
+            const gridSize = 25 * scaleX;
+            for (let x = 0; x < width; x += gridSize) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
+            }
+            for (let y = 0; y < height; y += gridSize) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+            }
+
+            const L = getLayout();
+
+            // Wire Y coordinates
+            const yIn1 = 180;  // Mic_IN1_P line (Top)
+            const yBias = 250; // Mic_BIAS line (Bottom)
+
+            // Dynamic logic: Mic_IN1_P flows ONLY when both GND & Mic_BIAS are active and Mic_IN1_P toggle is checked
+            const isMicActive = toggles.gnd && toggles.bias && toggles.in1;
+
+            // 1. DRAW SIGNAL LINES FIRST (BEHIND COMPONENTS)
+
+            // --- LINE 1: Mic_IN1_P (MIC -> Audio CODE) [Flows Left to Right] ---
+            drawLineSignal(L.mic.x + L.mic.w, yIn1, L.coilIn1.x, yIn1, '#38bdf8', isMicActive, '', -10, animStyle, false);
+            drawLineSignal(L.coilIn1.x + L.coilIn1.w, yIn1, L.subSocket.x, yIn1, '#38bdf8', isMicActive, '', -10, animStyle, false);
+            drawLineSignal(L.subSocket.x + L.subSocket.w, yIn1, L.mainSocket.x, yIn1, '#38bdf8', isMicActive, 'Mic_IN1_P', -12, animStyle, false);
+            drawLineSignal(L.mainSocket.x + L.mainSocket.w, yIn1, L.audioIc.x, yIn1, '#38bdf8', isMicActive, '', -10, animStyle, false);
+
+
+            // --- LINE 2: Mic_BIAS (Audio CODE -> MIC or Reverse) ---
+            const rev = toggles.biasReverse;
+            drawLineSignal(L.audioIc.x, yBias, L.mainSocket.x + L.mainSocket.w, yBias, '#ef4444', toggles.bias, '', 18, animStyle, rev);
+            drawLineSignal(L.mainSocket.x, yBias, L.subSocket.x + L.subSocket.w, yBias, '#ef4444', toggles.bias, 'Mic_BIAS', 22, animStyle, rev);
+            drawLineSignal(L.subSocket.x, yBias, L.coilBias.x + L.coilBias.w, yBias, '#ef4444', toggles.bias, '', 18, animStyle, rev);
+            drawLineSignal(L.coilBias.x, yBias, L.mic.x + L.mic.w, yBias, '#ef4444', toggles.bias, '', 18, animStyle, rev);
+
+
+            // --- LINE 3: GND LINE (GND to MIC Flow) ---
+            const gndStartX = L.gndPoint.x;
+            const gndMidX = L.mic.x + L.mic.w * 0.5;
+            const gndStartY = L.gndPoint.y;
+            const micBottomY = L.mic.y + L.mic.h;
+
+            // Segment 1: GND terminal to Turning Corner
+            drawLineSignal(gndStartX, gndStartY, gndMidX, gndStartY, '#94a3b8', toggles.gnd, '', 0, animStyle, false);
+            // Segment 2: Turning Corner Upwards to MIC Bottom
+            drawLineSignal(gndMidX, gndStartY, gndMidX, micBottomY, '#94a3b8', toggles.gnd, 'GND', -15, animStyle, false);
+
+            // GND Symbol Text & Lines
+            const gndPx = gndStartX * scaleX;
+            const gndPy = gndStartY * scaleY;
+            
+            ctx.fillStyle = toggles.gnd ? '#cbd5e1' : '#64748b';
+            ctx.font = `bold ${14 * scaleX}px Inter`;
+            ctx.textAlign = 'center';
+            ctx.fillText('GND', gndPx - 25 * scaleX, gndPy + 5 * scaleY);
+
+            ctx.strokeStyle = toggles.gnd ? '#94a3b8' : '#475569';
+            ctx.lineWidth = 2 * scaleX;
+            for (let i = 0; i < 3; i++) {
+                const barW = (18 - i * 5) * scaleX;
+                ctx.beginPath();
+                ctx.moveTo(gndPx - (i * 4) * scaleX, gndPy - barW / 2);
+                ctx.lineTo(gndPx - (i * 4) * scaleX, gndPy + barW / 2);
+                ctx.stroke();
+            }
+
+
+            // 2. DRAW COMPONENTS
+
+            // Draw Microphone
+            drawMicrophone(ctx, L.mic.x * scaleX, L.mic.y * scaleY, L.mic.w * scaleX, L.mic.h * scaleY);
+            // Green Myanmar symbol '၃' above MIC
+            ctx.fillStyle = '#22c55e';
+            ctx.font = `bold ${32 * scaleX}px Padauk, Inter`;
+            ctx.textAlign = 'center';
+            ctx.fillText(L.mic.sub, (L.mic.x + L.mic.w / 2) * scaleX, (L.mic.y - 15) * scaleY);
+            ctx.font = `bold ${13 * scaleX}px Inter`;
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillText('MIC', (L.mic.x + L.mic.w / 2) * scaleX, (L.mic.y - 45) * scaleY);
+
+            // Draw Inductor Coils
+            drawInductorCoil(ctx, L.coilIn1.x * scaleX, yIn1 * scaleY, L.coilIn1.w * scaleX, isMicActive ? '#38bdf8' : '#334155');
+            drawInductorCoil(ctx, L.coilBias.x * scaleX, yBias * scaleY, L.coilBias.w * scaleX, toggles.bias ? '#ef4444' : '#334155');
+
+            // Draw Sockets
+            drawRoundedRect(ctx, L.subSocket.x * scaleX, L.subSocket.y * scaleY, L.subSocket.w * scaleX, L.subSocket.h * scaleY, 3, '#1d4ed8', '#3b82f6');
+            drawRoundedRect(ctx, L.mainSocket.x * scaleX, L.mainSocket.y * scaleY, L.mainSocket.w * scaleX, L.mainSocket.h * scaleY, 3, '#1d4ed8', '#3b82f6');
+
+            // Socket Text Labels
+            ctx.fillStyle = '#e2e8f0';
+            ctx.font = `bold ${14 * scaleX}px Padauk, Inter`;
+            ctx.textAlign = 'center';
+            ctx.fillText('အောက်ခြမ်း', (L.subSocket.x + L.subSocket.w / 2) * scaleX, (L.subSocket.y + L.subSocket.h + 25) * scaleY);
+            ctx.font = `bold ${13 * scaleX}px Inter`;
+            ctx.fillText('Socket', (L.subSocket.x + L.subSocket.w / 2) * scaleX, (L.subSocket.y + L.subSocket.h + 45) * scaleY);
+
+            ctx.font = `bold ${13 * scaleX}px Inter`;
+            ctx.fillText('Mainboard', (L.mainSocket.x + L.mainSocket.w / 2) * scaleX, (L.mainSocket.y + L.mainSocket.h + 25) * scaleY);
+            ctx.fillText('Socket', (L.mainSocket.x + L.mainSocket.w / 2) * scaleX, (L.mainSocket.y + L.mainSocket.h + 45) * scaleY);
+
+            // Flex Cable Center Text "အလယ်ကြိုး"
+            ctx.fillStyle = '#cbd5e1';
+            ctx.font = `bold ${16 * scaleX}px Padauk, Inter`;
+            ctx.fillText('အလယ်ကြိုး', (L.subSocket.x + L.mainSocket.x) / 2 * scaleX, 135 * scaleY);
+
+            // Draw Audio CODE (Green Component)
+            drawRoundedRect(ctx, L.audioIc.x * scaleX, L.audioIc.y * scaleY, L.audioIc.w * scaleX, L.audioIc.h * scaleY, 24 * scaleX, '#16a34a', '#15803d');
+            ctx.fillStyle = '#ffffff';
+            ctx.font = `bold ${18 * scaleX}px Inter`;
+            ctx.fillText(L.audioIc.title, (L.audioIc.x + L.audioIc.w / 2) * scaleX, (L.audioIc.y + L.audioIc.h / 2 + 6) * scaleY);
+            
+            // Red Myanmar Symbol '၂' under Audio CODE
+            ctx.fillStyle = '#ef4444';
+            ctx.font = `bold ${38 * scaleX}px Padauk, Inter`;
+            ctx.fillText(L.audioIc.sub, (L.audioIc.x + L.audioIc.w / 2) * scaleX, (L.audioIc.y + L.audioIc.h + 45) * scaleY);
+        }
+
+        function animate() {
+            if (isPlaying) {
+                animOffset += 0.016; // Approx 60 FPS update loop
+            }
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('load', () => {
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // Playback Controls
+            const playPauseBtn = document.getElementById('playPauseBtn');
+            const playIcon = document.getElementById('playIcon');
+            const playBtnText = document.getElementById('playBtnText');
+
+            playPauseBtn.addEventListener('click', () => {
+                isPlaying = !isPlaying;
+                if (isPlaying) {
+                    playIcon.className = 'fa-solid fa-pause';
+                    playBtnText.textContent = 'Pause Flow';
+                } else {
+                    playIcon.className = 'fa-solid fa-play';
+                    playBtnText.textContent = 'Play Flow';
+                }
+            });
+
+            document.getElementById('resetBtn').addEventListener('click', () => {
+                animOffset = 0;
+                speed = 1.0;
+                toggles.biasReverse = false;
+                document.getElementById('biasDirText').textContent = 'Volt Flow: Audio CODE ➔ MIC';
+                document.getElementById('speedSlider').value = 1.0;
+                document.getElementById('speedVal').textContent = '1.0x';
+                draw();
+            });
+
+            // Toggle Reverse Direction for Volt (Mic_BIAS)
+            document.getElementById('reverseBiasBtn').addEventListener('click', () => {
+                toggles.biasReverse = !toggles.biasReverse;
+                const dirText = document.getElementById('biasDirText');
+                if (toggles.biasReverse) {
+                    dirText.textContent = 'Volt Flow: MIC ➔ Audio CODE';
+                } else {
+                    dirText.textContent = 'Volt Flow: Audio CODE ➔ MIC';
+                }
+                draw();
+            });
+
+            const speedSlider = document.getElementById('speedSlider');
+            const speedVal = document.getElementById('speedVal');
+            speedSlider.addEventListener('input', (e) => {
+                speed = parseFloat(e.target.value);
+                speedVal.textContent = speed.toFixed(1) + 'x';
+            });
+
+            document.getElementById('styleSelect').addEventListener('change', (e) => {
+                animStyle = e.target.value;
+            });
+
+            // Toggle Checkboxes
+            document.getElementById('toggleBias').addEventListener('change', (e) => toggles.bias = e.target.checked);
+            document.getElementById('toggleIn1').addEventListener('change', (e) => toggles.in1 = e.target.checked);
+            document.getElementById('toggleGnd').addEventListener('change', (e) => toggles.gnd = e.target.checked);
+
+            // Hover Tooltip Interactivity
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = BASE_WIDTH / canvas.clientWidth;
+                const scaleY = BASE_HEIGHT / canvas.clientHeight;
+
+                const mouseX = (e.clientX - rect.left) * scaleX;
+                const mouseY = (e.clientY - rect.top) * scaleY;
+
+                const L = getLayout();
+                let hovered = null;
+
+                if (mouseX >= L.audioIc.x && mouseX <= L.audioIc.x + L.audioIc.w && mouseY >= L.audioIc.y && mouseY <= L.audioIc.y + L.audioIc.h) hovered = L.audioIc;
+                else if (mouseX >= L.mic.x && mouseX <= L.mic.x + L.mic.w && mouseY >= L.mic.y && mouseY <= L.mic.y + L.mic.h) hovered = L.mic;
+                else if (mouseX >= L.subSocket.x - 10 && mouseX <= L.subSocket.x + L.subSocket.w + 10 && mouseY >= L.subSocket.y && mouseY <= L.subSocket.y + L.subSocket.h) hovered = L.subSocket;
+                else if (mouseX >= L.mainSocket.x - 10 && mouseX <= L.mainSocket.x + L.mainSocket.w + 10 && mouseY >= L.mainSocket.y && mouseY <= L.mainSocket.y + L.mainSocket.h) hovered = L.mainSocket;
+                else if (mouseX >= L.coilIn1.x && mouseX <= L.coilIn1.x + L.coilIn1.w && mouseY >= L.coilIn1.y - 10 && mouseY <= L.coilIn1.y + L.coilIn1.h + 10) hovered = L.coilIn1;
+                else if (mouseX >= L.coilBias.x && mouseX <= L.coilBias.x + L.coilBias.w && mouseY >= L.coilBias.y - 10 && mouseY <= L.coilBias.y + L.coilBias.h + 10) hovered = L.coilBias;
+                else if (mouseX >= L.subSocket.x && mouseX <= L.mainSocket.x && mouseY >= 120 && mouseY <= 160) hovered = L.flexCable;
+                else if (mouseX >= L.gndPoint.x - 20 && mouseX <= L.gndPoint.x + 40 && mouseY >= L.gndPoint.y - 20 && mouseY <= L.gndPoint.y + 20) hovered = L.gndPoint;
+
+                if (hovered) {
+                    tooltip.innerHTML = `<strong class="text-emerald-400">${hovered.title}</strong><br><span class="text-slate-300">${hovered.info}</span>`;
+                    tooltip.style.left = `${e.clientX - rect.left + 15}px`;
+                    tooltip.style.top = `${e.clientY - rect.top + 15}px`;
+                    tooltip.style.opacity = '1';
+                } else {
+                    tooltip.style.opacity = '0';
+                }
+            });
+
+            canvas.addEventListener('mouseleave', () => {
+                tooltip.style.opacity = '0';
+            });
+
+            // Start animation loop
+            animate();
+        });
+    </script>
+</body>
+</html>
