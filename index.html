@@ -108,19 +108,19 @@
             <label class="flex items-center gap-2 cursor-pointer bg-slate-950/80 hover:bg-slate-800/50 px-4 py-2 rounded-lg border border-red-500/30 transition-colors">
                 <input type="checkbox" id="toggleBias" checked class="accent-red-500 w-4 h-4 cursor-pointer">
                 <span class="w-3 h-3 rounded-full bg-red-500 inline-block shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span>
-                <span class="font-semibold text-slate-200">Mic_BIAS (Audio CODE ➔ MIC)</span>
+                <span class="font-semibold text-slate-200">Voltage ရောက်ရှိခြင်း</span>
             </label>
 
             <label class="flex items-center gap-2 cursor-pointer bg-slate-950/80 hover:bg-slate-800/50 px-4 py-2 rounded-lg border border-slate-400/30 transition-colors">
                 <input type="checkbox" id="toggleGnd" checked class="accent-slate-400 w-4 h-4 cursor-pointer">
                 <span class="w-3 h-3 rounded-full bg-slate-400 inline-block shadow-[0_0_8px_rgba(148,163,184,0.8)]"></span>
-                <span class="font-semibold text-slate-200">GND Flow (GND ➔ MIC)</span>
+                <span class="font-semibold text-slate-200">Mic အလုပ်လုပ်ခြင်း</span>
             </label>
 
             <label class="flex items-center gap-2 cursor-pointer bg-slate-950/80 hover:bg-slate-800/50 px-4 py-2 rounded-lg border border-sky-500/30 transition-colors">
                 <input type="checkbox" id="toggleIn1" checked class="accent-sky-500 w-4 h-4 cursor-pointer">
                 <span class="w-3 h-3 rounded-full bg-sky-400 inline-block shadow-[0_0_8px_rgba(56,189,248,0.8)]"></span>
-                <span class="font-semibold text-slate-200">Mic_IN1_P (MIC ➔ Audio CODE)</span>
+                <span class="font-semibold text-slate-200">Data ပို့ဆောင်ခြင်း</span>
             </label>
         </div>
 
@@ -167,7 +167,7 @@
 
                 // Microphone Unit (Left side)
                 mic: { 
-                    x: 60, y: 150, w: 65, h: 100, 
+                    x: 60, y: 165, w: 65, h: 100, 
                     title: 'Microphone (MIC)', 
                     sub: '၃', 
                     info: 'Microphone - Audio Signal ကို လျှပ်စစ် Signal အဖြစ် ပြောင်းလဲပေးသည့် အစိတ်အပိုင်း' 
@@ -291,9 +291,9 @@
             const padW = 12;
             const padH = 8;
             // Pad 1 (Mic_IN1_P - Top)
-            drawRoundedRect(ctx, x + w - padW, y + 20, padW, padH, 2, '#fbbf24', '#b45309', 1);
+            drawRoundedRect(ctx, x + w - padW, y + 13, padW, padH, 2, '#fbbf24', '#b45309', 1);
             // Pad 2 (Mic_BIAS - Bottom)
-            drawRoundedRect(ctx, x + w - padW, y + h - 28, padW, padH, 2, '#fbbf24', '#b45309', 1);
+            drawRoundedRect(ctx, x + w - padW, y + h - 22, padW, padH, 2, '#fbbf24', '#b45309', 1);
         }
 
         function drawLineSignal(x1, y1, x2, y2, color, active, label, labelYOffset = -10, flowStyle = 'particles', reverseDirection = false) {
